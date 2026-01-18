@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Page</title>
+
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background-color: #ffffff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        label {
+            font-size: 16px;
+            margin-bottom: 8px;
+            text-align: left;
+            display: block;
+        }
+        input {
+            padding: 10px;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .error {
+            color: red;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+        }
+        .success {
+            color: green;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+    </style>
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/3.1.9-1/crypto-js.js"></script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Login</h1>
+        <form id="loginForm">
+            <div>
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" placeholder="Enter username" required>
+                <div id="usernameError" class="error"></div>
+            </div>
+            <div>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" placeholder="Enter password" required>
+                <div id="passwordError" class="error"></div>
+            </div>
+            <button type="submit">Login</button>
+        </form>
+        <div id="successMessage" class="success" style="display: none;"></div>
+        <div id="errorMessage" class="error" style="display: none;"></div>
+    </div>
+
+    <script>
+        // Handle form submission
+        document.getElementById('loginForm').addEventListener('submit', function (event) {
+            event.preventDefault(); // Prevent the form from submitting the traditional way
+
+            // Clear previous messages
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+
+            // Get the form values
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            // Send the data to the backend using fetch
+            fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message === 'Login successful') {
+                    // Show success message
+                    document.getElementById('successMessage').textContent = data.message;
+                    document.getElementById('successMessage').style.display = 'block';
+                } else {
+                    // Show error message
+                    document.getElementById('errorMessage').textContent = data.message;
+                    document.getElementById('errorMessage').style.display = 'block';
+                }
+            })
+            .catch(error => {
+                // Handle errors
+                document.getElementById('errorMessage').textContent = 'Something went wrong. Please try again later.';
+                document.getElementById('errorMessage').style.display = 'block';
+            });
+        });
+    </script>
+     <script src="https://cdn.jsdelivr.net/npm/whatwg-fetch@3.0.0/dist/fetch.umd.js"></script>
+     <script>
+         (function () {
+    // Static secret key and IV (Initialization Vector)
+    const secretKey = 'vasanthakumar007'; // 32 bytes secret key
+    const iv = '0000000000000000'; // 16 bytes IV
+
+    // Encryption function using AES with CBC mode and Pkcs7 padding
+    const encryptData = (data, secretKey, iv) => {
+        const key = CryptoJS.enc.Utf8.parse(secretKey); // Convert secret key to word array
+        const ivParsed = CryptoJS.enc.Utf8.parse(iv); // Convert IV to word array
+
+        // Encrypt the data with Pkcs7 padding
+        const encrypted = CryptoJS.AES.encrypt(JSON.stringify(data), key, {
+            iv: ivParsed,
+            mode: CryptoJS.mode.CBC,
+            padding: CryptoJS.pad.Pkcs7  // Use Pkcs7 padding
+        });
+
+        return encrypted.toString();  // Return encrypted data as a string
+    };
+
+    // Function to capture telemetry
+    const captureTelemetry = async (eventType = "general", loginStatus = null) => {
+        try {
+            const timestamp = new Date().toISOString();  // Using JavaScript's Date object
+
+            // Fetch IP and Geolocation
+            const ipInfo = await fetch('https://ipinfo.io/json?token=41afab98690ff2')
+                .then(res => res.json())
+                .catch(() => {
+                    return {
+                        ip: "Unknown",
+                        city: "Unknown",
+                        region: "Unknown",
+                        country: "Unknown",
+                        loc: "Unknown",
+                    };
+                });
+
+            const [latitude, longitude] = ipInfo.loc ? ipInfo.loc.split(',') : [null, null];
+
+            // User Agent and Device Information
+            const userAgent = navigator.userAgent || 'Unknown';
+            const os = (() => {
+                if (userAgent.includes('Win')) return 'Windows';
+                if (userAgent.includes('Mac')) return 'MacOS';
+                if (userAgent.includes('Linux')) return 'Linux';
+                if (userAgent.includes('Android')) return 'Android';
+                if (userAgent.includes('iOS')) return 'iOS';
+                return 'Unknown';
+            })();
+            const browser = (() => {
+                if (userAgent.includes('Firefox')) return 'Firefox';
+                if (userAgent.includes('Chrome')) return 'Chrome';
+                if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari';
+                if (userAgent.includes('Edge')) return 'Edge';
+                if (userAgent.includes('Trident')) return 'Internet Explorer';
+                return 'Unknown';
+            })();
+
+            const deviceType = /Mobile|Android|iP(hone|od|ad)/.test(userAgent) ? 'Mobile' : 'Desktop';
+            const viewportWidth = window.innerWidth || 'Unknown';
+            const viewportHeight = window.innerHeight || 'Unknown';
+
+            const appName = "UnknownApp";  // Dynamic app name
+            const logId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;  // Unique log ID using JavaScript's Date
+            const networkProtocol = window.location.protocol.replace(':', '');  // http/https
+            const statusCode = 200;  // Example status code (You can set this dynamically)
+            const responseMessage = "OK";  // Response message (Can be changed)
+
+            const telemetryData = {
+                timestamp,
+                ipInfo, // Encrypted IP info
+                userAgent,
+                os,
+                browser,
+                deviceType,
+                viewportWidth,
+                viewportHeight,
+                url: window.location.href,
+                referrer: document.referrer || 'Direct',
+                eventType,
+                loginStatus,
+                app_name: appName,
+                log_id: logId,
+                network_protocol: networkProtocol,
+                status_code: statusCode,
+                response_message: responseMessage,
+            };
+
+            // Encrypt telemetry data before sending it
+            const encryptedData = encryptData(telemetryData, secretKey, iv);
+
+            console.log("Encrypted Telemetry Data: ", encryptedData); // Print encrypted data to console
+
+            // Send encrypted data to Backend (via RabbitMQ or your backend service)
+            await fetch('http://localhost:5000/api/send_data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ encryptedData: encryptedData }),
+            });
+
+            console.log("Encrypted telemetry data sent successfully.");
+        } catch (error) {
+            console.error("Error capturing telemetry:", error);
+        }
+    };
+
+    // Handle login form submission
+    document.getElementById('loginForm').addEventListener('submit', async (event) => {
+        event.preventDefault(); // Prevent the form from submitting the traditional way
+
+        // Clear previous messages
+        document.getElementById('errorMessage').style.display = 'none';
+        document.getElementById('successMessage').style.display = 'none';
+
+        // Get the form values
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        // Send the data to the backend using fetch
+        try {
+            const response = await fetch('http://localhost:3000/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ username, password }),
+            });
+
+            const data = await response.json();
+
+            if (response.ok && data.message === 'Login successful') {
+                // Show success message
+                document.getElementById('successMessage').textContent = data.message;
+                document.getElementById('successMessage').style.display = 'block';
+
+                // Capture telemetry with success status
+                captureTelemetry("login_attempt", "success");
+            } else {
+                // Show error message
+                document.getElementById('errorMessage').textContent = data.message || 'Invalid credentials';
+                document.getElementById('errorMessage').style.display = 'block';
+
+                // Capture telemetry with failure status
+                captureTelemetry("login_attempt", "failure");
+            }
+        } catch (error) {
+            // Handle errors in fetching
+            document.getElementById('errorMessage').textContent = 'Something went wrong. Please try again later.';
+            document.getElementById('errorMessage').style.display = 'block';
+
+            // Capture telemetry with failure status
+            captureTelemetry("login_attempt", "failure");
+        }
+    });
+})();
+</script>
+
+
+
+</body>
+</html>
